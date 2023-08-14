@@ -1,5 +1,4 @@
 const std = @import("std");
-const ArrayList = std.ArrayList;
 const AutoHashmap = std.AutoHashMap;
 
 pub const Cell = struct {
@@ -23,15 +22,20 @@ pub const Cell = struct {
 
     pub fn linkTo(self: *Self, cell: *Cell) !void {
         try self.*.links.put(cell, {});
+        try cell.*.links.put(self, {});
     }
 
     pub fn unlink(self: *Self, cell: *Cell) bool {
-        return self.*.links.remove(cell);
+        return self.*.links.remove(cell) and cell.*.links.remove(self);
     }
 
     pub fn deinit(self: *Self) void {
         self.links.deinit();
         self.allocator.free(self.memory);
+    }
+
+    pub fn isLinkedTo(self: *const Self, cell: *Cell) bool {
+        return self.links.contains(cell);
     }
 };
 
@@ -40,17 +44,17 @@ test "Cell - Init" {
     var cell = try Cell.init(allocator, 10, 10);
     defer cell.deinit();
 
-    try std.testing.expect(cell.row == 10);
-    try std.testing.expect(cell.column == 10);
+    try std.testing.expectEqual(cell.row, 10);
+    try std.testing.expectEqual(cell.column, 10);
 
-    try std.testing.expect(cell.north == null);
-    try std.testing.expect(cell.south == null);
-    try std.testing.expect(cell.east == null);
-    try std.testing.expect(cell.west == null);
+    try std.testing.expectEqual(cell.north, null);
+    try std.testing.expectEqual(cell.south, null);
+    try std.testing.expectEqual(cell.east, null);
+    try std.testing.expectEqual(cell.west, null);
 
-    try std.testing.expect(cell.allocator.ptr == allocator.ptr);
-    try std.testing.expect(cell.memory.len == 100);
-    try std.testing.expect(cell.links.count() == 0);
+    try std.testing.expectEqual(cell.allocator.ptr, allocator.ptr);
+    try std.testing.expectEqual(cell.memory.len, 100);
+    try std.testing.expectEqual(cell.links.count(), 0);
 }
 
 test "Cell - Link to another Cell" {
@@ -63,7 +67,8 @@ test "Cell - Link to another Cell" {
 
     try cell.linkTo(&other_cell);
 
-    try std.testing.expect(cell.links.count() == 1);
+    try std.testing.expectEqual(cell.links.count(), 1);
+    try std.testing.expectEqual(other_cell.links.count(), 1);
 }
 
 test "Cell - Unlink to another Cell" {
@@ -75,10 +80,12 @@ test "Cell - Unlink to another Cell" {
     defer other_cell.deinit();
 
     try cell.linkTo(&other_cell);
-    try std.testing.expect(cell.links.count() == 1);
+    try std.testing.expectEqual(cell.links.count(), 1);
+    try std.testing.expectEqual(other_cell.links.count(), 1);
 
     _ = cell.unlink(&other_cell);
-    try std.testing.expect(cell.links.count() == 0);
+    try std.testing.expectEqual(cell.links.count(), 0);
+    try std.testing.expectEqual(other_cell.links.count(), 0);
 }
 
 test "Cell - Add neighbors to Cell" {
@@ -90,5 +97,42 @@ test "Cell - Add neighbors to Cell" {
     defer other_cell.deinit();
 
     cell.north = &other_cell;
-    try std.testing.expect(cell.north == &other_cell);
+    try std.testing.expectEqual(cell.north, &other_cell);
+}
+
+test "Cell - Iterate over the links of a Cell" {
+    var allocator = std.testing.allocator;
+    var cell = try Cell.init(allocator, 10, 10);
+    defer cell.deinit();
+
+    var other_cell = try Cell.init(allocator, 20, 20);
+    defer other_cell.deinit();
+
+    var yet_another_cell = try Cell.init(allocator, 20, 20);
+    defer yet_another_cell.deinit();
+
+    try cell.linkTo(&other_cell);
+    try cell.linkTo(&yet_another_cell);
+
+    try std.testing.expectEqual(cell.links.count(), 2);
+
+    var it = cell.links.keyIterator();
+    while (it.next()) |k| {
+        try std.testing.expectEqual(k.*.links.count(), 1);
+    }
+}
+
+test "Cell - Check if a Cell is linked to another one" {
+    var allocator = std.testing.allocator;
+    var cell = try Cell.init(allocator, 10, 10);
+    defer cell.deinit();
+
+    var other_cell = try Cell.init(allocator, 20, 20);
+    defer other_cell.deinit();
+
+    try cell.linkTo(&other_cell);
+    try std.testing.expectEqual(cell.links.count(), 1);
+
+    try std.testing.expect(cell.isLinkedTo(&other_cell));
+    try std.testing.expect(other_cell.isLinkedTo(&cell));
 }
