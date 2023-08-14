@@ -5,12 +5,22 @@ const c = @cImport({
 
 const std = @import("std");
 const assert = @import("std").debug.assert;
+const models = @import("models/models.zig");
+const Cell = models.Cell;
 
 pub fn lerp(a: f32, b: f32, t: f32) f32 {
     return a + (b - a) * t;
 }
 
 pub fn main() !void {
+    var allocator = std.heap.page_allocator;
+    var cell = try Cell.init(allocator, 10, 10);
+    var other_cell = try Cell.init(allocator, 20, 20);
+    try cell.linkTo(&other_cell);
+
+    defer other_cell.deinit();
+    defer cell.deinit();
+
     if (c.SDL_Init(c.SDL_INIT_VIDEO) != 0) {
         c.SDL_Log("Unable to initialize SDL: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
@@ -89,4 +99,8 @@ test "simple test" {
     defer list.deinit();
     try list.append(42);
     try std.testing.expectEqual(@as(i32, 42), list.pop());
+}
+
+test {
+    @import("std").testing.refAllDecls(@This());
 }

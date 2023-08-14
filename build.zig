@@ -35,6 +35,9 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    unit_tests.linkSystemLibrary("SDL2");
+    unit_tests.linkSystemLibrary("SDL2_ttf");
+    unit_tests.linkSystemLibrary("c");
 
     const run_unit_tests = b.addRunArtifact(unit_tests);
     const test_step = b.step("test", "Run unit tests");
