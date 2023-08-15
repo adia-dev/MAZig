@@ -7,6 +7,7 @@ const std = @import("std");
 const assert = @import("std").debug.assert;
 const models = @import("models/models.zig");
 const Cell = models.Cell;
+const Grid = models.Grid;
 
 pub fn lerp(a: f32, b: f32, t: f32) f32 {
     return a + (b - a) * t;
@@ -14,12 +15,17 @@ pub fn lerp(a: f32, b: f32, t: f32) f32 {
 
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
-    var cell = try Cell.init(allocator, 10, 10);
-    var other_cell = try Cell.init(allocator, 20, 20);
+
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+
+    var cell = try Cell.init(arena.allocator(), 10, 10);
+    var other_cell = try Cell.init(arena.allocator(), 20, 20);
+
     try cell.linkTo(&other_cell);
 
-    defer other_cell.deinit();
-    defer cell.deinit();
+    var grid = try Grid.init(arena.allocator(), 10, 10);
+    _ = grid;
 
     if (c.SDL_Init(c.SDL_INIT_VIDEO) != 0) {
         c.SDL_Log("Unable to initialize SDL: %s", c.SDL_GetError());

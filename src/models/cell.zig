@@ -1,6 +1,7 @@
 const std = @import("std");
 const AutoHashmap = std.AutoHashMap;
 
+/// TODO: document this class and methods
 pub const Cell = struct {
     const Self = @This();
 
@@ -36,6 +37,45 @@ pub const Cell = struct {
 
     pub fn isLinkedTo(self: *const Self, cell: *Cell) bool {
         return self.links.contains(cell);
+    }
+
+    pub fn print(self: *const Self) void {
+        std.debug.print(
+            \\ Cell({*}):
+            \\      coords:
+            \\          row: {d}
+            \\          column: {d}
+            \\      neighbors:
+            \\          north: {?*}
+            \\          south: {?*}
+            \\          east: {?*} 
+            \\          west: {?*} 
+            \\      links:
+            \\          count: {d}
+            \\      memory:
+            \\          size: {d} bytes
+            \\
+        , .{ self, self.row, self.column, self.north, self.south, self.east, self.west, self.links.count(), self.memory.len });
+    }
+
+    pub fn toString(self: *const Self, allocator: std.mem.Allocator) []const u8 {
+        return std.fmt.allocPrint(allocator,
+            \\ Cell({*}):
+            \\      coords:
+            \\          row: {d}
+            \\          column: {d}
+            \\      neighbors:
+            \\          north: {?*}
+            \\          south: {?*}
+            \\          east: {?*} 
+            \\          west: {?*} 
+            \\      links:
+            \\          count: {d}
+            \\      memory:
+            \\          size: {d} bytes
+            \\
+        , .{ self, self.row, self.column, self.north, self.south, self.east, self.west, self.links.count(), self.memory.len }) catch
+            "(null)";
     }
 };
 
