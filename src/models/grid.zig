@@ -44,11 +44,11 @@ pub const Grid = struct {
                 }
 
                 if (@subWithOverflow(j, 1)[1] == 0) {
-                    current.*.east = &self.cells.items[i].items[j - 1];
+                    current.*.west = &self.cells.items[i].items[j - 1];
                 }
 
                 if (j + 1 < row.items.len) {
-                    current.*.west = &self.cells.items[i].items[j + 1];
+                    current.*.east = &self.cells.items[i].items[j + 1];
                 }
             }
         }
@@ -88,6 +88,61 @@ pub const Grid = struct {
             }
         }
     }
+
+    pub fn toString(self: *Self, allocator: std.mem.Allocator) ![]const u8 {
+        var output = ArrayList(u8).init(allocator);
+        _ = try output.writer().write("+");
+
+        for (0..(self.width)) |_| {
+            _ = try output.writer().write("---+");
+        }
+
+        _ = try output.writer().write("\n");
+
+        for (self.cells.items) |row| {
+            var top = ArrayList(u8).init(allocator);
+            var bottom = ArrayList(u8).init(allocator);
+
+            defer top.deinit();
+            defer bottom.deinit();
+
+            _ = try top.writer().write("|");
+            _ = try bottom.writer().write("+");
+
+            for (row.items) |*cell| {
+                const body = "   ";
+                var east_boundary: []const u8 = undefined;
+
+                if (cell.east) |east| {
+                    east_boundary = if (cell.isLinkedTo(east)) " " else "|";
+                } else {
+                    east_boundary = "|";
+                }
+
+                _ = try top.writer().write(body);
+                _ = try top.writer().write(east_boundary);
+
+                var south_boundary: []const u8 = undefined;
+
+                if (cell.south) |south| {
+                    south_boundary = if (cell.isLinkedTo(south)) body else "---";
+                } else {
+                    south_boundary = "---";
+                }
+
+                _ = try bottom.writer().write(south_boundary);
+                _ = try bottom.writer().write("+");
+            }
+
+            _ = try output.writer().write(top.items);
+            _ = try output.writer().write("\n");
+
+            _ = try output.writer().write(bottom.items);
+            _ = try output.writer().write("\n");
+        }
+
+        return output.toOwnedSlice();
+    }
 };
 
 test "Grid - Init" {
@@ -126,6 +181,7 @@ test "Grid - Size of the grid" {
 pub fn _onlyForTest(cell: *Cell) void {
     _ = cell;
 }
+
 test "Grid - ForEach cells in the grid do..." {
     var allocator = std.testing.allocator;
     var arena = std.heap.ArenaAllocator.init(allocator);
