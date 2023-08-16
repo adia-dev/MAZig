@@ -1,6 +1,8 @@
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("SDL2/SDL_ttf.h");
+    @cInclude("stdlib.h");
+    @cInclude("time.h");
 });
 
 const std = @import("std");
@@ -14,6 +16,9 @@ pub fn lerp(a: f32, b: f32, t: f32) f32 {
 }
 
 pub fn main() !void {
+    const t: u32 = @intCast(c.time.time(0));
+    c.cstd.srand(t);
+
     var allocator = std.heap.page_allocator;
 
     var arena = std.heap.ArenaAllocator.init(allocator);

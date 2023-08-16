@@ -2,6 +2,7 @@ const std = @import("std");
 const Prng = std.rand.DefaultPrng;
 const Cell = @import("cell.zig").Cell;
 const ArrayList = std.ArrayList;
+const Random = @import("../utils/random.zig").Random;
 
 pub const Grid = struct {
     const Self = @This();
@@ -64,17 +65,9 @@ pub const Grid = struct {
         return &self.cells.items[row].items[column];
     }
 
-    pub fn getRandomCell(self: *Self) *Cell {
-        var prng = Prng.init(blk: {
-            var seed: u8 = undefined;
-            try std.os.getrandom(std.mem.asBytes(&seed));
-            break :blk seed;
-        });
-
-        const rand = prng.random();
-
-        const rand_row = rand.intRangeAtMost(usize, 0, self.cells.items.len);
-        const rand_column = rand.intRangeAtMost(usize, 0, self.cells.items[0].len);
+    pub fn getRandomCell(self: *Self) !*Cell {
+        const rand_row = try Random.range(usize, 0, self.cells.items.len - 1);
+        const rand_column = try Random.range(usize, 0, self.cells.items[0].items.len - 1);
 
         return &self.cells.items[rand_row].items[rand_column];
     }
@@ -190,4 +183,14 @@ test "Grid - ForEach cells in the grid do..." {
     var grid = try Grid.init(arena.allocator(), 3, 3);
 
     grid.forEach(_onlyForTest);
+}
+
+test "Grid - Get a random cell in the grid" {
+    var allocator = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+
+    var grid = try Grid.init(arena.allocator(), 3, 3);
+
+    _ = try grid.getRandomCell();
 }
