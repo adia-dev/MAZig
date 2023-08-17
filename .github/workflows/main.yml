@@ -24,3 +24,5 @@ jobs:
       - uses: actions/checkout@v2
       - uses: goto-bus-stop/setup-zig@v2
       - run: zig fmt --check src/*.zig
+      - with:
+          submodules: 'true'
