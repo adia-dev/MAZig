@@ -1,11 +1,8 @@
-const time = @cImport(@cInclude("time.h"));
-const cstd = @cImport(@cInclude("stdlib.h"));
 const std = @import("std");
 
 pub const Random = struct {
-    pub fn flipCoin() u8 {
-        const rnd: u8 = @intCast(@rem(cstd.rand(), 2));
-        return rnd;
+    pub fn flipCoin() !u8 {
+        return range(u8, 0, 1);
     }
 
     pub fn range(comptime T: type, min: T, max: T) !T {
@@ -20,18 +17,10 @@ pub const Random = struct {
     }
 };
 
-test "Utils - Random - flipCoin(cStyle)" {
-    for (0..100) |i| {
-        _ = i;
-        const r = Random.flipCoin();
-        try std.testing.expect(r == 0 or r == 1);
-    }
-}
-
 test "Utils - Random - flipCoin" {
     for (0..100) |i| {
         _ = i;
-        const r = try Random.range(u8, 0, 1);
+        const r = try Random.flipCoin();
         try std.testing.expect(r == 0 or r == 1);
     }
 }

@@ -12,7 +12,7 @@ const BinaryTree = struct {
     pub fn generate(grid: *Grid) !void {
         for (grid.cells.items) |*row| {
             for (row.items) |*cell| {
-                if (Random.flipCoin() == 0) {
+                if (try Random.flipCoin() == 0) {
                     if (cell.north) |north| {
                         try cell.linkTo(north);
                     }

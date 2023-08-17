@@ -17,7 +17,7 @@ const Sidewinder = struct {
             for (row.items) |*cell| {
                 try previous.append(cell);
 
-                const should_go_north = cell.east == null or (cell.north != null and Random.flipCoin() == 1);
+                const should_go_north = cell.east == null or (cell.north != null and try Random.flipCoin() == 1);
                 if (should_go_north) {
                     var random_cell_index: usize = try Random.range(usize, 0, previous.items.len - 1);
                     var random_cell: *Cell = previous.items[random_cell_index];

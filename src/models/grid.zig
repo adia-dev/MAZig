@@ -1,3 +1,8 @@
+const c = @cImport({
+    @cInclude("SDL2/SDL.h");
+    @cInclude("SDL2/SDL_ttf.h");
+});
+
 const std = @import("std");
 const Prng = std.rand.DefaultPrng;
 const Cell = @import("cell.zig").Cell;
@@ -80,6 +85,12 @@ pub const Grid = struct {
                 callback(cell);
             }
         }
+    }
+
+    pub fn render(self: *const Self, renderer: ?*c.SDL_Renderer) void {
+        _ = self;
+        const rect = c.SDL_Rect{ .x = 0, .y = 0, .w = 10, .h = 10 };
+        _ = c.SDL_RenderDrawRect(renderer, &rect);
     }
 
     pub fn toString(self: *Self, allocator: std.mem.Allocator) ![]const u8 {
