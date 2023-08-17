@@ -1,11 +1,11 @@
 const std = @import("std");
+const raylib = @import("vendor/raylib.zig/build.zig");
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
-
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{
@@ -15,11 +15,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe.linkSystemLibrary("SDL2");
-    exe.linkSystemLibrary("SDL2_ttf");
-    exe.linkSystemLibrary("c");
-
     b.installArtifact(exe);
+    exe.addIncludePath(.{ .path = "vendor" });
+
+    raylib.addTo(b, exe, target, optimize);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
@@ -35,9 +34,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    unit_tests.linkSystemLibrary("SDL2");
-    unit_tests.linkSystemLibrary("SDL2_ttf");
-    unit_tests.linkSystemLibrary("c");
 
     const run_unit_tests = b.addRunArtifact(unit_tests);
     const test_step = b.step("test", "Run unit tests");
