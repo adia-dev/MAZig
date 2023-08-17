@@ -1,5 +1,5 @@
 const std = @import("std");
-const raylib = @import("vendor/raylib.zig/build.zig");
+const raylib = @import("vendor/raylib/build.zig");
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
