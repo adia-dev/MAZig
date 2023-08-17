@@ -6,7 +6,7 @@ const Random = @import("../utils/random.zig").Random;
 const Cell = models.Cell;
 const Grid = models.Grid;
 
-const BinaryTree = struct {
+pub const BinaryTree = struct {
     const Self = @This();
 
     pub fn generate(grid: *Grid) !void {

@@ -36,10 +36,11 @@ pub const Grid = struct {
         }
     }
 
-    fn initCells(self: *Self) void {
+    pub fn initCells(self: *Self) void {
         for (self.cells.items, 0..) |row, i| {
             for (0..(row.items.len)) |j| {
                 var current: *Cell = &row.items[j];
+                current.links.clearRetainingCapacity();
 
                 if (@subWithOverflow(i, 1)[1] == 0) {
                     current.*.north = &self.cells.items[i - 1].items[j];

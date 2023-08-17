@@ -4,7 +4,7 @@ const models = @import("../models/models.zig");
 const Cell = models.Cell;
 const Grid = models.Grid;
 
-const Sidewinder = struct {
+pub const Sidewinder = struct {
     const Self = @This();
 
     pub fn generate(grid: *Grid) !void {
