@@ -37,7 +37,7 @@ test "Generator - BinaryTree - generate" {
 
     try BinaryTree.generate(&grid);
 
-    const grid_str = try grid.toString(arena.allocator());
+    const grid_str = try grid.toString(arena.allocator(), .{});
 
     std.debug.print("\nBinary Tree Maze:\n{s}\n", .{grid_str});
 }

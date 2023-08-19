@@ -1,13 +1,15 @@
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_ttf.h");
-});
+const raylib = @import("raylib");
 
 const std = @import("std");
 const Prng = std.rand.DefaultPrng;
 const Cell = @import("cell.zig").Cell;
 const ArrayList = std.ArrayList;
+
 const Random = @import("../utils/random.zig").Random;
+const Distance = @import("../models/distance.zig").Distance;
+
+const Constants = @import("../core/constants.zig");
+const CELL_SIZE = Constants.CELL_SIZE;
 
 pub const Grid = struct {
     const Self = @This();
@@ -15,6 +17,8 @@ pub const Grid = struct {
     width: usize,
     height: usize,
     cells: ArrayList(ArrayList(Cell)),
+
+    pub const RenderOptions = struct { content_callback: ?*const fn (cell: *Cell, allocator: std.mem.Allocator) []const u8 = null, distance: ?*Distance = null };
 
     pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Self {
         var new_grid = Self{ .width = width, .height = height, .cells = undefined };
@@ -88,14 +92,45 @@ pub const Grid = struct {
         }
     }
 
-    pub fn render(self: *const Self, renderer: ?*c.SDL_Renderer) void {
-        _ = self;
-        const rect = c.SDL_Rect{ .x = 0, .y = 0, .w = 10, .h = 10 };
-        _ = c.SDL_RenderDrawRect(renderer, &rect);
+    pub fn render(self: *const Self) void {
+        for (self.cells.items) |*row| {
+            for (row.items) |*cell| {
+                const x1: i32 = @intCast(cell.column * CELL_SIZE);
+                const y1: i32 = @intCast(cell.row * CELL_SIZE);
+
+                const x2: i32 = @intCast((cell.column + 1) * CELL_SIZE);
+                const y2: i32 = @intCast((cell.row + 1) * CELL_SIZE);
+
+                if (cell.north == null) {
+                    raylib.DrawLine(x1, y1, x2, y1, raylib.BLACK);
+                }
+
+                if (cell.west == null) {
+                    raylib.DrawLine(x1, y1, x1, y2, raylib.BLACK);
+                }
+
+                if (cell.east) |east| {
+                    if (!cell.isLinkedTo(east)) {
+                        raylib.DrawLine(x2, y1, x2, y2, raylib.BLACK);
+                    }
+                } else {
+                    raylib.DrawLine(x2, y1, x2, y2, raylib.BLACK);
+                }
+
+                if (cell.south) |south| {
+                    if (!cell.isLinkedTo(south)) {
+                        raylib.DrawLine(x1, y2, x2, y2, raylib.BLACK);
+                    }
+                } else {
+                    raylib.DrawLine(x1, y2, x2, y2, raylib.BLACK);
+                }
+            }
+        }
     }
 
-    pub fn toString(self: *Self, allocator: std.mem.Allocator) ![]const u8 {
+    pub fn toString(self: *Self, allocator: std.mem.Allocator, options: RenderOptions) ![]const u8 {
         var output = ArrayList(u8).init(allocator);
+        var buffer: [1024]u8 = undefined;
         _ = try output.writer().write("+");
 
         for (0..(self.width)) |_| {
@@ -115,7 +150,18 @@ pub const Grid = struct {
             _ = try bottom.writer().write("+");
 
             for (row.items) |*cell| {
-                const body = "   ";
+                var body: []const u8 = undefined;
+
+                if (options.distance) |distance| {
+                    if (distance.get(cell)) |d| {
+                        body = try std.fmt.bufPrint(&buffer, "{d:^3}", .{d});
+                    } else {
+                        body = "   ";
+                    }
+                } else {
+                    body = "   ";
+                }
+
                 var east_boundary: []const u8 = undefined;
 
                 if (cell.east) |east| {
@@ -130,13 +176,17 @@ pub const Grid = struct {
                 var south_boundary: []const u8 = undefined;
 
                 if (cell.south) |south| {
-                    south_boundary = if (cell.isLinkedTo(south)) body else "---";
+                    south_boundary = if (cell.isLinkedTo(south)) "   " else "---";
                 } else {
                     south_boundary = "---";
                 }
 
                 _ = try bottom.writer().write(south_boundary);
                 _ = try bottom.writer().write("+");
+
+                if (options.content_callback) |_| {
+                    allocator.free(body);
+                }
             }
 
             _ = try output.writer().write(top.items);

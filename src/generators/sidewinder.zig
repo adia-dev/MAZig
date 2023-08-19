@@ -46,7 +46,7 @@ test "Generator - Sidewinder - generate" {
 
     try Sidewinder.generate(&grid);
 
-    const grid_str = try grid.toString(arena.allocator());
+    const grid_str = try grid.toString(arena.allocator(), .{});
 
     std.debug.print("\nSidewinder Maze:\n{s}\n", .{grid_str});
 }

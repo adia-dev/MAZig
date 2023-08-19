@@ -1,5 +1,7 @@
 const std = @import("std");
 const AutoHashmap = std.AutoHashMap;
+const ArrayList = std.ArrayList;
+const Distance = @import("distance.zig").Distance;
 
 /// TODO: document this class and methods
 pub const Cell = struct {
@@ -37,6 +39,36 @@ pub const Cell = struct {
 
     pub fn isLinkedTo(self: *const Self, cell: *Cell) bool {
         return self.links.contains(cell);
+    }
+
+    pub fn distance(self: *Self, allocator: std.mem.Allocator) !Distance {
+        var d = try Distance.init(allocator, self);
+        var frontier = ArrayList(*Cell).init(allocator);
+        defer frontier.deinit();
+
+        try frontier.append(self);
+
+        while (frontier.items.len > 0) {
+            var new_frontier = ArrayList(*Cell).init(allocator);
+            defer new_frontier.deinit();
+
+            for (frontier.items) |cell| {
+                var it = cell.links.keyIterator();
+                while (it.next()) |linked_cell| {
+                    if (d.has(linked_cell.*)) {
+                        continue;
+                    }
+
+                    try d.set(linked_cell.*, d.get(cell).? + 1);
+                    try new_frontier.append(linked_cell.*);
+                }
+            }
+
+            frontier.deinit();
+            frontier = try new_frontier.clone();
+        }
+
+        return d;
     }
 
     pub fn print(self: *const Self) void {
@@ -175,4 +207,29 @@ test "Cell - Check if a Cell is linked to another one" {
 
     try std.testing.expect(cell.isLinkedTo(&other_cell));
     try std.testing.expect(other_cell.isLinkedTo(&cell));
+}
+
+test "Cell - Distance to linked cells" {
+    var allocator = std.testing.allocator;
+    var cell = try Cell.init(allocator, 10, 10);
+    defer cell.deinit();
+
+    var other_cell = try Cell.init(allocator, 20, 20);
+    defer other_cell.deinit();
+
+    var yet_another_cell = try Cell.init(allocator, 30, 30);
+    defer yet_another_cell.deinit();
+
+    try cell.linkTo(&other_cell);
+    try other_cell.linkTo(&yet_another_cell);
+
+    var distance = try cell.distance(allocator);
+    defer distance.deinit();
+
+    var it = distance.map.iterator();
+
+    while (it.next()) |kv| {
+        var cell_str = kv.key_ptr.*.toString(allocator);
+        defer allocator.free(cell_str);
+    }
 }
